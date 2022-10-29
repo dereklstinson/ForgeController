@@ -1,25 +1,28 @@
 /*
-Forge Menu for you peons
+Forge Fan controls
 */
-#ifndef ForgeFans_h
-#define ForgeFans_h
+#ifndef FFans_h
+#define FFans_h
 
 #include "Arduino.h"
 
-class ForgeFans {
+class FFans {
   public:
-    ForgeFans();
+    FFans();
     //This will calculate RPM based soley on time between interupts.
     //Problem is that it can't calculate it when the fan isn't running
-    unsigned long CalcRPM2();
-    unsigned long CalcRPM3();
-    //0 to 1000
-    void SetPWM9(long int b);
-    //0 to 1000
-    void SetPWM10(long int b);
+    void Begin();
+    unsigned long CalcRPM0();
+        //0 to 1000
+    void SetPWM0(long int b);
+    unsigned long CalcRPM1();
+        //0 to 1000
+     void SetPWM1(long int b);
+
+  
     //This checks if the fan is running
-    bool FanRunning2();
-    bool  FanRunning3();
+    bool FanRunning0();
+    bool  FanRunning1();
   private:
 unsigned long volatile globaltime2 = 0;
 unsigned long volatile globaltime3 = 0;

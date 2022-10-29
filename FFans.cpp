@@ -1,5 +1,5 @@
 #include "Arduino.h"
-#include "ForgeFan.h"
+#include "FFans.h"
 
 unsigned long volatile tachcurrent2 = 0;
 unsigned long volatile tachprevious2 = 0;
@@ -21,7 +21,10 @@ void risingdiffs3() {
   tachcurrent3 = micros();
 }
 
-ForgeFans::ForgeFans() {
+FFans::FFans() {
+
+}
+void FFans::Begin(){
   TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM11);
   TCCR1B = (1 << CS10) | (1 << WGM13);
   ICR1 = 320;
@@ -34,18 +37,23 @@ ForgeFans::ForgeFans() {
   attachInterrupt(digitalPinToInterrupt(2), risingdiffs2, RISING);
   attachInterrupt(digitalPinToInterrupt(3), risingdiffs3, RISING);
 }
-
-unsigned long ForgeFans::CalcRPM2() {
+unsigned long FFans::CalcRPM0() {
   unsigned long difference = tachcurrent2 - tachprevious2;
-  //two rises per rotation
+if(difference==0){
+return 0;  
+}    
+ //two rises per rotation
   //60 seconds in a minute
   //1,000,000 microseconds in a second
   //60000000ms/minute * 1 rotation/(2*difference(microseconds))
   //30000000/difference
   return 30000000 / difference;
 }
-unsigned long ForgeFans::CalcRPM3() {
+unsigned long FFans::CalcRPM1() {
   unsigned long difference = tachcurrent3 - tachprevious3;
+  if(difference==0){
+return 0;  
+}    
   //two rises per rotation
   //60 seconds in a minute
   //1,000,000 microseconds in a second
@@ -53,17 +61,17 @@ unsigned long ForgeFans::CalcRPM3() {
   //30000000/difference
   return 30000000 / difference;
 }
-void ForgeFans::SetPWM9(long int b) {
+void FFans::SetPWM1(long int b) {
   long int x = (320 * b);
   long int y = (1000);
   OCR1A = (uint16_t)(x / y);
 }
-void ForgeFans::SetPWM10(long int b) {
+void FFans::SetPWM0(long int b) {
   long int x = (320 * b);
   long int y = (1000);
   OCR1B = (uint16_t)(x / y);
 }
-bool ForgeFans::FanRunning2() {
+bool FFans::FanRunning0() {
   unsigned long nowtime = millis();
   //this is only relevent if its been running for weeks
   if (nowtime < globaltime2) {
@@ -83,7 +91,7 @@ bool ForgeFans::FanRunning2() {
   }
   return false;
 }
-bool ForgeFans::FanRunning3() {
+bool FFans::FanRunning1() {
   unsigned long nowtime = millis();
   //this is only relevent if its been running for weeks
   if (nowtime < globaltime3) {

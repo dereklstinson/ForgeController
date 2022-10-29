@@ -1,15 +1,14 @@
 /*
-Forge Menu for you peons
+Forge Menu for button debounce
 */
-#ifndef ForgeButton_h
-#define ForgeButton_h
+#ifndef FButton_h
+#define FButton_h
 
 #include "Arduino.h"
 
-class ForgeButton {
+class FButton {
   public:
-    ForgeButton(int pin);
-    
+    FButton(int pin);
     bool Pressed();
   private:
     int _pin;
@@ -17,5 +16,6 @@ class ForgeButton {
     unsigned long _lastdebounce;
    int _state;
    int _lstate;
+   int _holddelay;
 };
 #endif
