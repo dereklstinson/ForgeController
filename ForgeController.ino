@@ -5,40 +5,56 @@
 #include "FKtype.h"
 #include "FFans.h"
 
+//Menu options
 #define LEFT 1
 #define SELECT 2
 #define RIGHT 3
 #define NOBUTTON 0
-
-
+#define BASEPWM 65
+//#define TEMPSTEPS 50
+//#define NTEMPS 1300 / TEMPSTEPS
 #define MFAN 0
 #define MTEMP 1
 
-
+//Buttons
 FButton leftB(11);
 FButton selectB(12);
 FButton rightB(13);
 
+//double temps[NTEMPS];
+int togglefanoffms = 6000;
+int togglefanstotalms = 10000;
 bool selectedtoggle = false;
-int currentpwm = 0;
-int prevpwm = 0;
-int desiredtemp = 0;
-int prevtemp = 0;
+unsigned long currentpwm = 0;
+unsigned long averagefanspeed = 0;
+double averagetemp = 0.0;
+double desiredtemp = 0.0;
+double previousaveragetemp = 0.0;
+double baseblow = 0.0;
+//double maxblow =0.0;
+//Menu
 FMenu menu;
+//K type sensor
 FKtype tsensor;
 FFans fans;
+//position in menu
 int menupos;
 unsigned long previoustime = millis();
+unsigned long previoustime2 = millis();
 int buttonpressed;
+bool overshoot = false;
+
 void setup() {
+  randomSeed(analogRead(0));
+  baseblow = random(BASEPWM, 1000);
+  //for (unsigned long int i = 0; i < NTEMPS; i++) {
+  //  temps[i] = (double)((i + 1) * TEMPSTEPS);
+  //}
   fans.Begin();
   menu.Begin();
   if (!tsensor.Begin()) {
     menu.Error("TempSense");
   }
-
-
-
   selectedtoggle = false;
   menu.SelectFan();
   menu.Select();
@@ -47,44 +63,62 @@ void setup() {
 
 void loop() {
   unsigned long currenttime = millis();
-  double actualtemp = tsensor.ReadC();
-  menu.Temp(actualtemp);
-  double diftemp = 0;
-  if (currenttime - previoustime > 300) {
+
+  if (currenttime - previoustime > 250) {
     if (fans.FanRunning1()) {
-      menu.FanSpeed(fans.CalcRPM1());
+      unsigned long fancalc = fans.CalcRPM1();
+      if (fancalc > 9999) {
+        fancalc = 9999;
+      }
+      averagefanspeed = (7 * averagefanspeed + fancalc) / 8;
+      menu.FanSpeed(averagefanspeed);
+    } else {
+      menu.FanSpeed(0);
     }
-    diftemp = actualtemp - prevtemp;
+    double actualtemp = tsensor.ReadC();
+    averagetemp = (actualtemp * 3 + actualtemp) / 4;
+    actualtemp = averagetemp;
+    menu.Temp(actualtemp);
 
     previoustime = currenttime;
     if (menupos == MTEMP && selectedtoggle == true) {
 
-      if (actualtemp > desiredtemp + 10) {
-        currentpwm = 0;
+      if (actualtemp < desiredtemp) {
+        if (currenttime - previoustime2 > 5000) {
 
-      } else if (actualtemp >= desiredtemp) {
-        currentpwm /= 2;
-      } else {
-        if (currentpwm == 1000) {
-          currentpwm = 0;
-        } else if (currentpwm < 1000 && actualtemp < 5 * desiredtemp / 6) {
-          currentpwm++;
-        } else if (actualtemp < desiredtemp && diftemp > 1) {
-          currentpwm--;
-
-        } else if (prevpwm > currentpwm && diftemp < -1) {
-          currentpwm /= 2;
+          if (previousaveragetemp < averagetemp) {
+            if (overshoot == false) {
+              baseblow = random(BASEPWM, 999);
+            } else {
+              overshoot = false;
+              baseblow -= 3;
+              if (baseblow < BASEPWM) {
+                baseblow = BASEPWM;
+              }
+            }
+          }
+          previoustime2 = currenttime;
+          previousaveragetemp = averagetemp;
         }
+        currentpwm = (unsigned int)((((999.0 - baseblow) * (desiredtemp - actualtemp)) / desiredtemp) + baseblow);
 
-        if (currentpwm < 0) {
-          currentpwm = 0;
-        }
+
+      } else if (actualtemp > desiredtemp) {
+        currentpwm = BASEPWM;
+        overshoot = true;
       }
+      if (currentpwm > 1000) {
+        currentpwm = 1000;
+      }
+      if (currentpwm > 0 && currentpwm < BASEPWM) {
+        currentpwm = BASEPWM;
+      }
+
+
       fans.SetPWM0(currentpwm);
       fans.SetPWM1(currentpwm);
       menu.CtrlFanSpeed(currentpwm);
     }
-    prevpwm = currentpwm;
   }
 
   if (leftB.Pressed()) {

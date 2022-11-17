@@ -22,9 +22,8 @@ void risingdiffs3() {
 }
 
 FFans::FFans() {
-
 }
-void FFans::Begin(){
+void FFans::Begin() {
   TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM11);
   TCCR1B = (1 << CS10) | (1 << WGM13);
   ICR1 = 320;
@@ -39,10 +38,10 @@ void FFans::Begin(){
 }
 unsigned long FFans::CalcRPM0() {
   unsigned long difference = tachcurrent2 - tachprevious2;
-if(difference==0){
-return 0;  
-}    
- //two rises per rotation
+  if (difference == 0) {
+    return 0;
+  }
+  //two rises per rotation
   //60 seconds in a minute
   //1,000,000 microseconds in a second
   //60000000ms/minute * 1 rotation/(2*difference(microseconds))
@@ -51,9 +50,9 @@ return 0;
 }
 unsigned long FFans::CalcRPM1() {
   unsigned long difference = tachcurrent3 - tachprevious3;
-  if(difference==0){
-return 0;  
-}    
+  if (difference == 0) {
+    return 0;
+  }
   //two rises per rotation
   //60 seconds in a minute
   //1,000,000 microseconds in a second
@@ -61,14 +60,14 @@ return 0;
   //30000000/difference
   return 30000000 / difference;
 }
-void FFans::SetPWM1(long int b) {
-  long int x = (320 * b);
-  long int y = (1000);
+void FFans::SetPWM1(unsigned long int b) {
+  unsigned long int x = (320 * b);
+  unsigned long int y = (1000);
   OCR1A = (uint16_t)(x / y);
 }
-void FFans::SetPWM0(long int b) {
-  long int x = (320 * b);
-  long int y = (1000);
+void FFans::SetPWM0(unsigned long int b) {
+  unsigned long int x = (320 * b);
+  unsigned long int y = (1000);
   OCR1B = (uint16_t)(x / y);
 }
 bool FFans::FanRunning0() {

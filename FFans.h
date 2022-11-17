@@ -14,10 +14,10 @@ class FFans {
     void Begin();
     unsigned long CalcRPM0();
         //0 to 1000
-    void SetPWM0(long int b);
+    void SetPWM0(unsigned long int b);
     unsigned long CalcRPM1();
         //0 to 1000
-     void SetPWM1(long int b);
+     void SetPWM1(unsigned long int b);
 
   
     //This checks if the fan is running
