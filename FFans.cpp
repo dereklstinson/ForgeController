@@ -23,7 +23,7 @@ void risingdiffs3() {
 
 FFans::FFans() {
 }
-void FFans::Begin() {
+void FFans::Begin(unsigned long int Maxpwmvalue, unsigned long int MinWaitMils) {
   TCCR1A = (1 << COM1A1) | (1 << COM1B1) | (1 << WGM11);
   TCCR1B = (1 << CS10) | (1 << WGM13);
   ICR1 = 320;
@@ -35,6 +35,12 @@ void FFans::Begin() {
   pinMode(10, OUTPUT);
   attachInterrupt(digitalPinToInterrupt(2), risingdiffs2, RISING);
   attachInterrupt(digitalPinToInterrupt(3), risingdiffs3, RISING);
+  maxpwmvalue = Maxpwmvalue;
+  minwaitmils = MinWaitMils;
+}
+
+unsigned long int FFans::MaxPwmValue() {
+  return maxpwmvalue;
 }
 unsigned long FFans::CalcRPM0() {
   unsigned long difference = tachcurrent2 - tachprevious2;
@@ -61,52 +67,54 @@ unsigned long FFans::CalcRPM1() {
   return 30000000 / difference;
 }
 void FFans::SetPWM1(unsigned long int b) {
+  if (b > maxpwmvalue) {
+    b = maxpwmvalue;
+  }
   unsigned long int x = (320 * b);
-  unsigned long int y = (1000);
-  OCR1A = (uint16_t)(x / y);
+  OCR1A = (uint16_t)(x / maxpwmvalue);
 }
 void FFans::SetPWM0(unsigned long int b) {
+  if (b > maxpwmvalue) {
+    b = maxpwmvalue;
+  }
   unsigned long int x = (320 * b);
-  unsigned long int y = (1000);
-  OCR1B = (uint16_t)(x / y);
+  OCR1B = (uint16_t)(x / maxpwmvalue);
 }
 bool FFans::FanRunning0() {
   unsigned long nowtime = millis();
   //this is only relevent if its been running for weeks
   if (nowtime < globaltime2) {
     globaltime2 = nowtime;
-    tachcount2 = 0;
   }
   //This checks to see if the fan has been triggering the interupt
   unsigned long elapsedtime = nowtime - globaltime2;
-  unsigned long rpm = 1;
-  if (elapsedtime >= 5000) {
-    rpm = tachcount2 / elapsedtime;
-    tachcount2 = 0;
+  if (elapsedtime >= minwaitmils) {
     globaltime2 = nowtime;
+    if (tachcount2 - previoustachcount2 == 0) {
+      fanrunningflag0 = false;
+    } else {
+      tachcount2 = previoustachcount2;
+      fanrunningflag0 = true;
+    }
   }
-  if (rpm > 0) {
-    return true;
-  }
-  return false;
+  return fanrunningflag0;
 }
 bool FFans::FanRunning1() {
   unsigned long nowtime = millis();
   //this is only relevent if its been running for weeks
   if (nowtime < globaltime3) {
     globaltime3 = nowtime;
-    tachcount3 = 0;
   }
   //This checks to see if the fan has been triggering the interupt
   unsigned long elapsedtime = nowtime - globaltime3;
-  unsigned long rpm = 1;
-  if (elapsedtime >= 5000) {
-    rpm = tachcount3 / elapsedtime;
-    tachcount3 = 0;
+  if (elapsedtime >= minwaitmils) {
     globaltime3 = nowtime;
+    if (tachcount3 - previoustachcount3 == 0) {
+      fanrunningflag1 = false;
+    } else {
+      tachcount3 = previoustachcount3;
+      fanrunningflag1 = true;
+    }
   }
-  if (rpm > 0) {
-    return true;
-  }
-  return false;
+  return fanrunningflag1;
 }
